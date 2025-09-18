@@ -1,4 +1,5 @@
-
+import {clinicApp, patients, appointments, receipts} from "./main.js"
+import {createPassword, createPatient, } from "./main.js"
 
 const login = document.createElement("div");
 const newPassword = document.createElement("input");
@@ -17,13 +18,12 @@ login.appendChild(submit);
 
 document.body.appendChild(login); 
 
-
-
-
 submit.addEventListener("click",()=>{
-
+    
     if((newPassword.value === confirmPassword.value) && (confirmPassword.value.length>8)){
-        alert("passwords Match");
+        if(createPassword(newPassword.value)){
+            alert(`password ${clinicApp.pw.password}`);
+        };
     }else{
         alert("passwords do not Match");
     }
