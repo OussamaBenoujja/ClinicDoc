@@ -95,13 +95,9 @@ export let clinicApp = {
   }
 };
 
-
-
-
 export function saveToLocalStorage(){
     localStorage.setItem("clinicApp", JSON.stringify(clinicApp));
 }
-
 
 export function createPassword(password) {
     const pwObj = {
