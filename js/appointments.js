@@ -1,4 +1,5 @@
 import { clinicApp, createPatient, createAppointment, createReceipt } from "./main.js";
+import { renderClinicCalendar } from "./clinicCalender.js";
 
 export function showAppointmentsSection(main, nav) {
     main.innerHTML = "";
@@ -17,9 +18,6 @@ export function showAppointmentsSection(main, nav) {
     appointmentsSection.appendChild(titleRow);
 
     const practitionerFilter = document.createElement("select");
-    const allPractitioners = [...new Set(clinicApp.appointments.map(a => a.practitioner))];
-    practitionerFilter.innerHTML = `<option value="">All Practitioners</option>` +
-        allPractitioners.map(p => `<option value="${p}">${p}</option>`).join('');
     appointmentsSection.appendChild(practitionerFilter);
 
     const statusFilter = document.createElement("select");
@@ -27,6 +25,14 @@ export function showAppointmentsSection(main, nav) {
     statusFilter.innerHTML = statusOptions.map(s =>
         `<option value="${s}">${s === "" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join('');
     appointmentsSection.appendChild(statusFilter);
+
+    function rebuildPractitionerFilter() {
+        const selected = practitionerFilter.value || "";
+        const allPractitioners = [...new Set((clinicApp.appointments || []).map(a => a.practitioner).filter(Boolean))];
+        practitionerFilter.innerHTML = `<option value="">All Practitioners</option>` +
+            allPractitioners.map(p => `<option value="${p}" ${p === selected ? "selected" : ""}>${p}</option>`).join('');
+    }
+    rebuildPractitionerFilter();
 
     const table = document.createElement("table");
     const thead = document.createElement("thead");
@@ -74,7 +80,7 @@ export function showAppointmentsSection(main, nav) {
             row.appendChild(tdDate);
 
             const tdNotes = document.createElement("td");
-            tdNotes.textContent = appointment.notes;
+            tdNotes.textContent = appointment.notes || "";
             row.appendChild(tdNotes);
 
             const tdStatus = document.createElement("td");
@@ -88,11 +94,75 @@ export function showAppointmentsSection(main, nav) {
             row.appendChild(tdCreated);
 
             const tdActions = document.createElement("td");
+
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "Edit";
+            editBtn.addEventListener("click", () => {
+                const formDiv = document.createElement("div");
+
+                const practitionerInput = document.createElement("input");
+                practitionerInput.placeholder = "Practitioner";
+                practitionerInput.value = appointment.practitioner || "";
+
+                const dateInput = document.createElement("input");
+                dateInput.type = "datetime-local";
+                if (appointment.date) {
+                    const d = new Date(appointment.date);
+                    const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+                    dateInput.value = isoLocal;
+                }
+
+                const notesInput = document.createElement("input");
+                notesInput.placeholder = "Notes";
+                notesInput.value = appointment.notes || "";
+
+                const statusSelect = document.createElement("select");
+                ["confirmed","cancelled","no-show"].forEach(s => {
+                    const opt = document.createElement("option");
+                    opt.value = s;
+                    opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+                    if ((appointment.status || "confirmed") === s) opt.selected = true;
+                    statusSelect.appendChild(opt);
+                });
+
+                const saveBtn = document.createElement("button");
+                saveBtn.textContent = "Save";
+
+                formDiv.appendChild(practitionerInput);
+                formDiv.appendChild(dateInput);
+                formDiv.appendChild(notesInput);
+                formDiv.appendChild(statusSelect);
+                formDiv.appendChild(saveBtn);
+
+                appointmentsSection.insertBefore(formDiv, table);
+
+                saveBtn.addEventListener("click", () => {
+                    if (practitionerInput.value && dateInput.value) {
+                        appointment.edit(
+                            appointment.id,
+                            appointment.patient,
+                            practitionerInput.value,
+                            dateInput.value,
+                            notesInput.value
+                        );
+                        appointment.status = statusSelect.value || "confirmed";
+                        clinicApp.saveToLocalStorage();
+                        rebuildPractitionerFilter();
+                        renderAppointmentsTable(applyFilters());
+                        formDiv.remove();
+                    } else {
+                        alert("Please fill in required fields");
+                    }
+                });
+            });
+            tdActions.appendChild(editBtn);
+
             const delBtn = document.createElement("button");
-            delBtn.textContent = "🗑";
+            delBtn.textContent = "Delete";
             delBtn.addEventListener("click", () => {
                 clinicApp.appointments.splice(idx, 1);
                 clinicApp.saveToLocalStorage();
+                rebuildPractitionerFilter();
                 renderAppointmentsTable(applyFilters());
             });
             tdActions.appendChild(delBtn);
@@ -136,8 +206,12 @@ export function showAppointmentsSection(main, nav) {
         notesInput.placeholder = "Notes";
 
         const statusSelect = document.createElement("select");
-        statusSelect.innerHTML = statusOptions.map(s =>
-            `<option value="${s}">${s === "" ? "confirmed" : s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join('');
+        ["confirmed","cancelled","no-show"].forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+            statusSelect.appendChild(opt);
+        });
 
         const submitBtn = document.createElement("button");
         submitBtn.textContent = "Submit";
@@ -166,6 +240,7 @@ export function showAppointmentsSection(main, nav) {
                 );
                 appointment.status = statusValue;
                 clinicApp.saveToLocalStorage();
+                rebuildPractitionerFilter();
                 renderAppointmentsTable(applyFilters());
                 formDiv.remove();
             } else {
@@ -173,4 +248,8 @@ export function showAppointmentsSection(main, nav) {
             }
         });
     });
+
+    const calendarContainer = document.createElement("div");
+    appointmentsSection.appendChild(calendarContainer);
+    renderClinicCalendar(calendarContainer, clinicApp);
 }

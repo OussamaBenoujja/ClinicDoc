@@ -34,8 +34,6 @@ export function renderClinicCalendar(container, clinicApp) {
 
     function showAppointmentsForDay(day, month, year) {
         appointmentsList.innerHTML = "";
-        let selectedDate = new Date(year, month, day);
-
         let appointments = (clinicApp.appointments || []).filter(a => {
             let aDate = new Date(a.date);
             return aDate.getFullYear() === year &&
@@ -70,7 +68,7 @@ export function renderClinicCalendar(container, clinicApp) {
                 form.appendChild(time);
 
                 let notes = document.createElement("div");
-                notes.textContent = `Notes: ${a.notes}`;
+                notes.textContent = `Notes: ${a.notes || ""}`;
                 form.appendChild(notes);
 
                 let status = document.createElement("div");
@@ -104,11 +102,12 @@ export function renderClinicCalendar(container, clinicApp) {
                     cell.textContent = "";
                     row.appendChild(cell);
                 } else {
+                    const dayNum = date;
                     let cell = document.createElement("td");
-                    cell.textContent = date;
+                    cell.textContent = dayNum;
                     cell.style.cursor = "pointer";
                     cell.addEventListener("click", () => {
-                        showAppointmentsForDay(date, month, year);
+                        showAppointmentsForDay(dayNum, month, year);
                     });
                     row.appendChild(cell);
                     date++;
