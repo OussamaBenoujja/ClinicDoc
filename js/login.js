@@ -1,5 +1,9 @@
-import {clinicApp} from "./main.js"
+import {clinicApp, isLoggedIn} from "./main.js"
 import {createPassword} from "./main.js"
+
+import {dashboard} from "./dashboard.js"
+
+
 
 
 clinicApp.loadFromLocalStorage();
@@ -48,20 +52,15 @@ login.appendChild(submit);
 document.body.appendChild(login); 
 
 submit.addEventListener("click",()=>{
-    
-    if((enterPassword.value) && (enterPassword.value.length>8)){
         if(enterPassword.value === clinicApp.pw.password){
+            //isLoggedIn = true;
             alert(`this is the correct password congrats!!`);
+            dashboard();  
         }else{
             alert(`this is not the correct passowrd!!!`);
         };
-    }else{
-        alert("passwords do not Match");
-    }
+
 })
-
-
-
 }
 
 

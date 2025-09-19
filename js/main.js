@@ -1,6 +1,7 @@
 export let patients = [];
 export let appointments = [];
 export let receipts = [];
+export let isLoggedIn = false;
 
 export let clinicApp = {
   patients: [],
@@ -26,7 +27,6 @@ export let clinicApp = {
     const data = JSON.parse(localStorage.getItem("clinicApp"));
     if (!data) return;
 
-    
     this.patients = (data.patients || []).map(p => ({
       ...p,
       birthDay: new Date(p.birthDay),
@@ -46,7 +46,6 @@ export let clinicApp = {
       }
     }));
 
-    
     this.appointments = (data.appointments || []).map(a => ({
       ...a,
       date: new Date(a.date),
@@ -64,7 +63,6 @@ export let clinicApp = {
       }
     }));
 
-    
     this.receipts = (data.receipts || []).map(r => ({
       ...r,
       createdAt: new Date(r.createdAt),
@@ -81,7 +79,6 @@ export let clinicApp = {
       }
     }));
 
-    
     if (data.pw) {
       this.pw = {
         ...data.pw,
@@ -129,11 +126,11 @@ export function createPatient(id, fullName, phone, date, email, notes = "") {
         this.updatedAt = new Date();
     },
     delete() {
-        const index = patients.indexOf(this);
-        if (index > -1) patients.splice(index, 1);
+        const index = clinicApp.patients.indexOf(this);
+        if (index > -1) clinicApp.patients.splice(index, 1);
     }
   };
-  patients.push(patient);
+  clinicApp.patients.push(patient);
   return patient;
 }
 
@@ -153,11 +150,11 @@ export function createAppointment(id, patient, practitioner, date, notes = "") {
       this.notes = notes;
     },
     delete() {
-      const index = appointments.indexOf(this);
-      if (index > -1) appointments.splice(index, 1);
+      const index = clinicApp.appointments.indexOf(this);
+      if (index > -1) clinicApp.appointments.splice(index, 1);
     }
   };
-  appointments.push(appointment);
+  clinicApp.appointments.push(appointment);
   return appointment;
 }
 
@@ -177,10 +174,10 @@ export function createReceipt(id, appointment, amount, status = "pending", notes
       this.notes = notes;
     },
     delete() {
-      const index = receipts.indexOf(this);
-      if (index > -1) receipts.splice(index, 1);
+      const index = clinicApp.receipts.indexOf(this);
+      if (index > -1) clinicApp.receipts.splice(index, 1);
     }
   };
-  receipts.push(receipt);
+  clinicApp.receipts.push(receipt);
   return receipt;
 }
