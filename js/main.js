@@ -158,20 +158,27 @@ export function createAppointment(id, patient, practitioner, date, notes = "") {
   return appointment;
 }
 
-export function createReceipt(id, appointment, amount, status = "pending", notes = "") {
+export function createReceipt(id, appointment, amount, type, status = "pending", notes = "", method = "", category = "", date = new Date()) {
   const receipt = {
     id,
     appointment,
     amount,
+    type, //income or expense
     status,
     notes,
-    createdAt: new Date(),
-    edit(id, appointment, amount, status, notes) {
+    method, 
+    category, 
+    createdAt: new Date(date),
+    edit(id, appointment, amount, type, status, notes, method, category, date) {
       this.id = id;
       this.appointment = appointment;
       this.amount = amount;
+      this.type = type;
       this.status = status;
       this.notes = notes;
+      this.method = method;
+      this.category = category;
+      this.createdAt = new Date(date);
     },
     delete() {
       const index = clinicApp.receipts.indexOf(this);
