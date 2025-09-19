@@ -1,9 +1,6 @@
 import {clinicApp, isLoggedIn} from "./main.js"
-import {createPassword} from "./main.js"
-
+import {createPassword, setIsLoggedIn} from "./main.js"
 import {dashboard} from "./dashboard.js"
-
-
 
 
 clinicApp.loadFromLocalStorage();
@@ -55,6 +52,7 @@ submit.addEventListener("click",()=>{
         if(enterPassword.value === clinicApp.pw.password){
             //isLoggedIn = true;
             alert(`this is the correct password congrats!!`);
+            setIsLoggedIn(true);
             dashboard();  
         }else{
             alert(`this is not the correct passowrd!!!`);

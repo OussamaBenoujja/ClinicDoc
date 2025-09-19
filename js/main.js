@@ -3,6 +3,11 @@ export let appointments = [];
 export let receipts = [];
 export let isLoggedIn = false;
 
+
+export function setIsLoggedIn(val){
+    return isLoggedIn = val;
+};
+
 export let clinicApp = {
   patients: [],
   appointments: [],
@@ -92,9 +97,9 @@ export let clinicApp = {
   }
 };
 
-export function saveToLocalStorage(){
+/*export function saveToLocalStorage(){
     localStorage.setItem("clinicApp", JSON.stringify(clinicApp));
-}
+}*/
 
 export function createPassword(password) {
     const pwObj = {
