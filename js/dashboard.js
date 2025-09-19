@@ -6,13 +6,11 @@ export function dashboard() {
     const main = document.createElement("div");
     const patientsSection = document.createElement("div");
 
-
     const titleRow = document.createElement("div");
     const title = document.createElement("h2");
     title.textContent = "Patient Management";
     titleRow.appendChild(title);
 
-    
     const addBtn = document.createElement("button");
     addBtn.textContent = "Add Patient";
     titleRow.appendChild(addBtn);
@@ -23,7 +21,6 @@ export function dashboard() {
     searchBar.type = "text";
     searchBar.placeholder = "Search by name or phone...";
     patientsSection.appendChild(searchBar);
-
 
     const table = document.createElement("table");
     const thead = document.createElement("thead");
@@ -52,10 +49,9 @@ export function dashboard() {
     main.appendChild(patientsSection);
     document.body.appendChild(main);
 
-   
     function renderPatientsTable(patients) {
         tbody.innerHTML = "";
-        patients.forEach(patient => {
+        patients.forEach((patient, idx) => {
             const row = document.createElement("tr");
 
             const tdName = document.createElement("td");
@@ -81,6 +77,7 @@ export function dashboard() {
             row.appendChild(tdDate);
 
             const tdActions = document.createElement("td");
+
             const viewBtn = document.createElement("button");
             viewBtn.textContent = "👁";
             tdActions.appendChild(viewBtn);
@@ -91,6 +88,11 @@ export function dashboard() {
 
             const delBtn = document.createElement("button");
             delBtn.textContent = "🗑";
+            delBtn.addEventListener("click", () => {
+                clinicApp.patients.splice(idx, 1);
+                clinicApp.saveToLocalStorage();
+                renderPatientsTable(clinicApp.patients);
+            });
             tdActions.appendChild(delBtn);
 
             row.appendChild(tdActions);
@@ -100,9 +102,7 @@ export function dashboard() {
 
     renderPatientsTable(clinicApp.patients);
 
-   
     addBtn.addEventListener("click", () => {
-        
         const formDiv = document.createElement("div");
 
         const nameInput = document.createElement("input");
@@ -131,14 +131,11 @@ export function dashboard() {
         formDiv.appendChild(notesInput);
         formDiv.appendChild(submitBtn);
 
-      
         patientsSection.insertBefore(formDiv, table);
 
         submitBtn.addEventListener("click", () => {
-            
             if (nameInput.value && phoneInput.value && emailInput.value && birthInput.value) {
-                
-                const id = Date.now(); 
+                const id = Date.now();
                 createPatient(
                     id,
                     nameInput.value,
