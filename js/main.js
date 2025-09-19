@@ -7,24 +7,23 @@ export function setIsLoggedIn(val){
     return isLoggedIn = val;
 };
 
+const DATA_KEY = "clinicApp:data";
+const PW_KEY   = "clinicApp:pw";
+const LEGACY_KEY = "clinicApp";
 
-const DATA_KEY = "clinicApp:data";   
-const PW_KEY   = "clinicApp:pw";    
-const LGKEY = "clinicApp";      
+const MAX_FAILS = 5;
+const LOCKOUT_MS = 5 * 60 * 1000;
 
-
-
-function hashPW(password_){
-  let hash
-  for(let i = 0;i<password_.legth;i++){
+function hashPW(password_) {
+  let hash = 0;
+  let mod = 1;
+  for (let i = 0, j = 1; i < password_.length; i++, j++) {
     hash += password_.charCodeAt(i);
+    mod %= j;
+    hash += mod;
   }
-
-  return hash % 100000;
+  return hash;
 }
-
-
-
 
 function encrypt(text, shift) {
   let out = "";
@@ -44,12 +43,26 @@ function decrypt(text, shift) {
   return out;
 }
 
-
 function deriveShiftFromPassword(pw) {
-  if (!pw) return 0; 
+  if (!pw) return 0;
   let sum = 0;
   for (let i = 0; i < pw.length; i++) sum = (sum + pw.charCodeAt(i)) % 65535;
-  return sum; 
+  return sum;
+}
+
+function savePwMeta(pwObj) {
+  localStorage.setItem(PW_KEY, JSON.stringify(pwObj));
+}
+
+function loadPwMeta() {
+  const raw = localStorage.getItem(PW_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 export let clinicApp = {
@@ -57,85 +70,82 @@ export let clinicApp = {
   appointments: [],
   receipts: [],
   pw: null,
+  sessionShift: null,
 
   saveToLocalStorage() {
-    
-    localStorage.setItem(PW_KEY, JSON.stringify(this.pw));
-
+    savePwMeta(this.pw);
+    if (this.sessionShift == null) return;
     const payload = {
       patients: this.patients,
       appointments: this.appointments,
       receipts: this.receipts
     };
-
-    const shift = deriveShiftFromPassword(this.pw?.password);
-    const plain = JSON.stringify(payload);
-    const cipher = encrypt(plain, shift);
+    const cipher = encrypt(JSON.stringify(payload), this.sessionShift);
     localStorage.setItem(DATA_KEY, cipher);
-
-   
-    localStorage.removeItem(LGKEY);
+    localStorage.removeItem(LEGACY_KEY);
   },
 
   loadFromLocalStorage() {
-    
-    const pwRaw = localStorage.getItem(PW_KEY);
-    if (pwRaw) {
-    
-        const parsed = JSON.parse(pwRaw);
-        if (parsed && typeof parsed === "object") {
-          this.pw = {
-            ...parsed,
-            edit: function(newPassword) {
-              this.password = newPassword;
-            }
-          };
-        }
-      
-    }
-
-    let data = null;
-
-    
-    const cipher = localStorage.getItem(DATA_KEY);
-    if (cipher && this.pw?.password) {
+    this.pw = loadPwMeta();
+    this.patients = [];
+    this.appointments = [];
+    this.receipts = [];
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy && !localStorage.getItem(DATA_KEY)) {
       try {
-        const shift = deriveShiftFromPassword(this.pw.password);
-        const plain = decrypt(cipher, shift);
-        data = JSON.parse(plain);
-      } catch (_) {
-        data = null;
-      }
+        const legacyObj = JSON.parse(legacy);
+        if (!this.pw && legacyObj.pw) {
+          this.pw = {
+            hash: hashPW(legacyObj.pw.password || ""),
+            failedAttempts: 0,
+            lockedUntil: 0
+          };
+          savePwMeta(this.pw);
+        }
+      } catch {}
     }
+  },
 
-    
-    if (!data) {
-      const legacy = localStorage.getItem(LGKEY);
+  unlockWithPassword(password) {
+    const v = this.verifyPassword(password);
+    if (!v.ok) return v;
+    this.sessionShift = deriveShiftFromPassword(password);
+    const cipher = localStorage.getItem(DATA_KEY);
+    if (cipher) {
+      try {
+        const plain = decrypt(cipher, this.sessionShift);
+        const data = JSON.parse(plain);
+        this.hydrateData(data);
+        return { ok: true };
+      } catch {
+        this.patients = [];
+        this.appointments = [];
+        this.receipts = [];
+        return { ok: false, reason: "decrypt-failed" };
+      }
+    } else {
+      const legacy = localStorage.getItem(LEGACY_KEY);
       if (legacy) {
         try {
           const legacyObj = JSON.parse(legacy);
-          
-          if (!this.pw && legacyObj.pw) {
-            this.pw = {
-              ...legacyObj.pw,
-              edit: function(newPassword) {
-                this.password = newPassword;
-              }
-            };
-          }
-          data = {
+          this.hydrateData({
             patients: legacyObj.patients || [],
             appointments: legacyObj.appointments || [],
             receipts: legacyObj.receipts || []
-          };
-        } catch (_) {
-          data = null;
+          });
+          this.saveToLocalStorage();
+          localStorage.removeItem(LEGACY_KEY);
+        } catch {
+          this.patients = [];
+          this.appointments = [];
+          this.receipts = [];
         }
       }
+      return { ok: true };
     }
+  },
 
-    if (!data) return;
-
+  hydrateData(data) {
     this.patients = (data.patients || []).map(p => ({
       ...p,
       birthDay: p.birthDay ? new Date(p.birthDay) : null,
@@ -187,19 +197,44 @@ export let clinicApp = {
         if (index > -1) clinicApp.receipts.splice(index, 1);
       }
     }));
+  },
+
+  verifyPassword(password) {
+    if (!this.pw || typeof this.pw.hash === "undefined") {
+      return { ok: false, reason: "no-password" };
+    }
+    const now = Date.now();
+    if (this.pw.lockedUntil && now < this.pw.lockedUntil) {
+      return { ok: false, reason: "locked", lockedUntil: this.pw.lockedUntil };
+    }
+    const candidate = hashPW(password);
+    if (candidate === this.pw.hash) {
+      this.pw.failedAttempts = 0;
+      this.pw.lockedUntil = 0;
+      savePwMeta(this.pw);
+      return { ok: true };
+    } else {
+      this.pw.failedAttempts = (this.pw.failedAttempts || 0) + 1;
+      if (this.pw.failedAttempts >= MAX_FAILS) {
+        this.pw.lockedUntil = now + LOCKOUT_MS;
+        this.pw.failedAttempts = 0;
+      }
+      savePwMeta(this.pw);
+      return { ok: false, reason: "mismatch", remaining: Math.max(0, MAX_FAILS - (this.pw.failedAttempts || 0)) };
+    }
   }
 };
 
 export function createPassword(password) {
   const pwObj = {
-    password,
-    edit(newPassword) {
-      this.password = newPassword;
-    }
+    hash: hashPW(password),
+    failedAttempts: 0,
+    lockedUntil: 0
   };
   clinicApp.pw = pwObj;
-  
   localStorage.setItem(PW_KEY, JSON.stringify(pwObj));
+  clinicApp.sessionShift = deriveShiftFromPassword(password);
+  clinicApp.saveToLocalStorage();
   return pwObj;
 }
 
