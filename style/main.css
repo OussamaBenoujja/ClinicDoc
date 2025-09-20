@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+
+body {
+    font-family: "Open Sans", sans-serif;
+    font-optical-sizing: auto;
+    background-color: #3A6F43;
+
+}
+
+#mainForm{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    background-color: #3A6F43;
+    height: 80%;
+    width: 70%;
+    border-radius: 30px;
+    box-shadow: 0px 0px 100px 0.01px black;
+    display: flex;
+    flex-direction: row;
+   align-items: center;
+   justify-content: center;
+   gap: 100px;
+}
+
+#logoSpot {
+    background-color: #FFD5D5;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 40%;
+    height: auto;
+    border-radius: 30px;
+}
+
+#logoSpot img {
+    width: 100%;
+}
+
+#loginForm {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 30%;
+    height: 80%;
+    border-radius: 30px;
+    gap: 40px;
+}
+
+#loginForm input {
+    width: 65%;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 5px;
+}
+
+#loginForm button{
+    background-color: #59AC77;
+    color: white;
+    font-size: large;
+    font-weight: bolder;
+    border: none;
+    border-radius: 8px;
+    width: 40%;
+    padding: 10px;
+    margin: 5px;
+}
+
+#formTitle {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+#holder_ {
+    gap: 1px;
+}

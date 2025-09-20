@@ -1,5 +1,5 @@
 import { clinicApp, createPatient, createAppointment, createReceipt, isLoggedIn, setIsLoggedIn} from "./main.js";
-import { renderClinicCalendar } from "./clinicCalender.js";
+
 
 import {showAppointmentsSection} from "./appointments.js";
 import {showMainDashboard}       from "./mainDash.js";
